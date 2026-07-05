@@ -1,23 +1,25 @@
-import notifee, { EventType } from 'react-native-notify-kit';
-
+import { isExpoGo } from '../platform/runtime';
 import { NOTIFICATION } from '../constants/config';
 import { monitoringController } from '../services/monitoringController';
 
 let registered = false;
 
-export function registerNotificationHandlers() {
-  if (registered) {
+export async function registerNotificationHandlers() {
+  if (registered || isExpoGo) {
     return;
   }
   registered = true;
 
-  notifee.registerForegroundService(() => {
+  const notifee = await import('react-native-notify-kit');
+  const { EventType } = notifee;
+
+  notifee.default.registerForegroundService(() => {
     return new Promise(() => {
       // Keeps the Android foreground service alive while monitoring runs.
     });
   });
 
-  notifee.onBackgroundEvent(async ({ type, detail }) => {
+  notifee.default.onBackgroundEvent(async ({ type, detail }) => {
     if (
       type === EventType.ACTION_PRESS &&
       detail.pressAction?.id === NOTIFICATION.stopActionId
@@ -26,7 +28,7 @@ export function registerNotificationHandlers() {
     }
   });
 
-  notifee.onForegroundEvent(({ type, detail }) => {
+  notifee.default.onForegroundEvent(({ type, detail }) => {
     if (
       type === EventType.ACTION_PRESS &&
       detail.pressAction?.id === NOTIFICATION.stopActionId
@@ -36,4 +38,4 @@ export function registerNotificationHandlers() {
   });
 }
 
-registerNotificationHandlers();
+void registerNotificationHandlers();

@@ -88,22 +88,36 @@ export function SpeedCard({ title, value, style }: SpeedCardProps) {
 type PermissionRowProps = {
   title: string;
   granted: boolean;
+  unavailable?: boolean;
   onGrant: () => void;
 };
 
-export function PermissionRow({ title, granted, onGrant }: PermissionRowProps) {
+export function PermissionRow({
+  title,
+  granted,
+  unavailable = false,
+  onGrant,
+}: PermissionRowProps) {
   return (
     <View style={styles.permissionRow}>
       <View style={styles.permissionLeft}>
         <View
           style={[
             styles.permissionDot,
-            { backgroundColor: granted ? colors.accent5G : colors.accentMuted },
+            {
+              backgroundColor: granted
+                ? colors.accent5G
+                : unavailable
+                  ? colors.accentMuted
+                  : colors.accentMuted,
+            },
           ]}
         />
         <Text style={styles.permissionTitle}>{title}</Text>
       </View>
-      {granted ? (
+      {unavailable ? (
+        <Text style={styles.granted}>Dev build</Text>
+      ) : granted ? (
         <Text style={styles.granted}>Granted</Text>
       ) : (
         <Pressable
@@ -119,6 +133,18 @@ export function PermissionRow({ title, granted, onGrant }: PermissionRowProps) {
           <Text style={styles.grantButtonText}>Grant</Text>
         </Pressable>
       )}
+    </View>
+  );
+}
+
+export function ExpoGoBanner() {
+  return (
+    <View style={styles.banner}>
+      <Text style={styles.bannerTitle}>Expo Go preview</Text>
+      <Text style={styles.bannerText}>
+        UI and network type work here. Notification dot, live speeds, and
+        background monitoring need a dev build.
+      </Text>
     </View>
   );
 }
@@ -230,5 +256,25 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 13,
     fontFamily: 'DMSans_500Medium',
+  },
+  banner: {
+    marginBottom: 20,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: colors.accentSoft,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  bannerTitle: {
+    color: colors.accent,
+    fontSize: 13,
+    fontFamily: 'DMSans_600SemiBold',
+    marginBottom: 4,
+  },
+  bannerText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: 'DMSans_400Regular',
   },
 });

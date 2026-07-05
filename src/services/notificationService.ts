@@ -1,20 +1,32 @@
-import notifee, { AndroidImportance } from 'react-native-notify-kit';
-
+import { isExpoGo } from '../platform/runtime';
 import { NOTIFICATION } from '../constants/config';
-import type { CellularInfo } from '../types';
+import type { CellularInfo } from '../types/cellular';
 import { familyToDotColor } from '../types';
 
 let channelReady = false;
 
+async function getNotifee() {
+  if (isExpoGo) {
+    return null;
+  }
+
+  return import('react-native-notify-kit');
+}
+
 export async function ensureNotificationChannel() {
-  if (channelReady) {
+  if (isExpoGo || channelReady) {
     return;
   }
 
-  await notifee.createChannel({
+  const notifee = await getNotifee();
+  if (!notifee) {
+    return;
+  }
+
+  await notifee.default.createChannel({
     id: NOTIFICATION.channelId,
     name: NOTIFICATION.channelName,
-    importance: AndroidImportance.LOW,
+    importance: notifee.AndroidImportance.LOW,
     vibration: false,
   });
 
@@ -26,12 +38,21 @@ export async function updateMonitorNotification(
   download: string,
   upload: string,
 ) {
+  if (isExpoGo) {
+    return;
+  }
+
+  const notifee = await getNotifee();
+  if (!notifee) {
+    return;
+  }
+
   await ensureNotificationChannel();
 
   const carrier = cellular.carrier ?? 'Cellular';
   const dotColor = familyToDotColor(cellular.family);
 
-  await notifee.displayNotification({
+  await notifee.default.displayNotification({
     id: NOTIFICATION.id,
     title: 'Stratum',
     body: `● ${cellular.label}  •  ${carrier}\n↓ ${download}     ↑ ${upload}`,
@@ -59,10 +80,28 @@ export async function updateMonitorNotification(
 }
 
 export async function dismissMonitorNotification() {
-  await notifee.stopForegroundService();
-  await notifee.cancelNotification(NOTIFICATION.id);
+  if (isExpoGo) {
+    return;
+  }
+
+  const notifee = await getNotifee();
+  if (!notifee) {
+    return;
+  }
+
+  await notifee.default.stopForegroundService();
+  await notifee.default.cancelNotification(NOTIFICATION.id);
 }
 
 export async function requestNotificationPermission() {
-  await notifee.requestPermission();
+  if (isExpoGo) {
+    return;
+  }
+
+  const notifee = await getNotifee();
+  if (!notifee) {
+    return;
+  }
+
+  await notifee.default.requestPermission();
 }

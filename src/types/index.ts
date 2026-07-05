@@ -1,5 +1,4 @@
-import type { CellularFamily, CellularInfo, CellularLabel } from 'expo-stratum-core';
-import NetInfo from '@react-native-community/netinfo';
+import type { CellularFamily, CellularInfo, CellularLabel } from './cellular';
 
 export type { CellularFamily, CellularInfo, CellularLabel };
 
@@ -40,30 +39,33 @@ function netInfoToFamily(generation: string | null | undefined): CellularFamily 
   }
 }
 
-export async function getCellularInfoWithFallback(
+export async function getCellularInfoFromNetInfo(): Promise<CellularInfo> {
+  const NetInfo = (await import('@react-native-community/netinfo')).default;
+  const state = await NetInfo.fetch();
+
+  if (state.type !== 'cellular') {
+    return {
+      label: 'Unknown',
+      family: 'other',
+      carrier: null,
+    };
+  }
+
+  const generation = state.details?.cellularGeneration ?? null;
+
+  return {
+    label: netInfoToLabel(generation),
+    family: netInfoToFamily(generation),
+    carrier: state.details?.carrier ?? null,
+  };
+}
+
+export async function mergeCellularInfo(
   nativeInfo: CellularInfo,
 ): Promise<CellularInfo> {
   if (nativeInfo.label !== 'Unknown' && nativeInfo.family !== 'other') {
     return nativeInfo;
   }
 
-  const state = await NetInfo.fetch();
-  if (state.type !== 'cellular') {
-    return {
-      label: 'Unknown',
-      family: 'other',
-      carrier: nativeInfo.carrier,
-    };
-  }
-
-  const generation =
-    state.type === 'cellular' ? state.details?.cellularGeneration : null;
-
-  return {
-    label: netInfoToLabel(generation),
-    family: netInfoToFamily(generation),
-    carrier:
-      nativeInfo.carrier ??
-      (state.type === 'cellular' ? state.details?.carrier ?? null : null),
-  };
+  return getCellularInfoFromNetInfo();
 }

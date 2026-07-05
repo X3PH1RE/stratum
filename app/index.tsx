@@ -1,4 +1,3 @@
-import { getCellularInfo } from 'expo-stratum-core';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
+  ExpoGoBanner,
   MonitoringToggle,
   NetworkPreview,
   PermissionRow,
@@ -20,8 +20,9 @@ import {
 } from '../src/components/ui';
 import { colors } from '../src/constants/colors';
 import { useMonitoring, usePermissions } from '../src/hooks/useMonitoring';
+import { readCellularInfo } from '../src/platform/nativeApi';
 import { monitoringController } from '../src/services/monitoringController';
-import { getCellularInfoWithFallback, type CellularInfo } from '../src/types';
+import type { CellularInfo } from '../src/types/cellular';
 
 const idleCellular: CellularInfo = {
   label: 'Unknown',
@@ -29,7 +30,11 @@ const idleCellular: CellularInfo = {
   carrier: null,
 };
 
-async function hasRequiredPermissions() {
+async function hasRequiredPermissions(isExpoGo: boolean) {
+  if (isExpoGo) {
+    return true;
+  }
+
   if (Platform.OS !== 'android') {
     return false;
   }
@@ -49,7 +54,8 @@ async function hasRequiredPermissions() {
 }
 
 export default function HomeScreen() {
-  const { running, cellular: liveCellular, download, upload, toggle } = useMonitoring();
+  const { running, cellular: liveCellular, download, upload, toggle, previewMode } =
+    useMonitoring();
   const [previewCellular, setPreviewCellular] = useState<CellularInfo>(idleCellular);
   const {
     permissions,
@@ -58,6 +64,7 @@ export default function HomeScreen() {
     requestNotifications,
     requestPhoneState,
     refresh,
+    isExpoGo,
   } = usePermissions();
   const [bootstrapped, setBootstrapped] = useState(false);
 
@@ -68,7 +75,7 @@ export default function HomeScreen() {
       await refresh();
       const enabled = await monitoringController.loadPersistedEnabled();
 
-      if (enabled && (await hasRequiredPermissions())) {
+      if (enabled && (await hasRequiredPermissions(isExpoGo))) {
         await monitoringController.start();
       }
 
@@ -82,7 +89,7 @@ export default function HomeScreen() {
     return () => {
       mounted = false;
     };
-  }, [refresh]);
+  }, [refresh, isExpoGo]);
 
   useEffect(() => {
     if (running) {
@@ -90,7 +97,7 @@ export default function HomeScreen() {
     }
 
     const poll = async () => {
-      const info = await getCellularInfoWithFallback(getCellularInfo());
+      const info = await readCellularInfo();
       setPreviewCellular(info);
     };
 
@@ -113,7 +120,7 @@ export default function HomeScreen() {
       return;
     }
 
-    if (enabled && permissions.battery !== 'granted') {
+    if (enabled && !isExpoGo && permissions.battery !== 'granted') {
       Alert.alert(
         'Battery optimization',
         'For reliable monitoring on battery saver, allow Stratum to ignore battery optimizations.',
@@ -150,6 +157,8 @@ export default function HomeScreen() {
       >
         <Text style={styles.title}>Stratum</Text>
 
+        {previewMode ? <ExpoGoBanner /> : null}
+
         <NetworkPreview
           label={cellular.label}
           family={cellular.family}
@@ -181,6 +190,7 @@ export default function HomeScreen() {
           <PermissionRow
             title="Battery exempt"
             granted={permissions.battery === 'granted'}
+            unavailable={permissions.battery === 'unavailable'}
             onGrant={() => {
               void requestBattery();
             }}
@@ -188,6 +198,7 @@ export default function HomeScreen() {
           <PermissionRow
             title="Notifications"
             granted={permissions.notifications === 'granted'}
+            unavailable={isExpoGo}
             onGrant={() => {
               void requestNotifications();
             }}
@@ -197,6 +208,10 @@ export default function HomeScreen() {
         {!requiredGranted ? (
           <Text style={styles.hint}>
             Grant phone state and notifications to enable monitoring.
+          </Text>
+        ) : isExpoGo ? (
+          <Text style={styles.hint}>
+            Open this project in Expo Go via the QR code from npx expo start.
           </Text>
         ) : null}
       </ScrollView>

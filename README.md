@@ -8,7 +8,22 @@ Android network monitor with a persistent notification dot (red for LTE/LTE+/4G,
 - Android device with cellular data (emulator is not sufficient for 4G/5G testing)
 - [Android SDK](https://docs.expo.dev/workflow/android-studio-emulator/) for local builds
 
-## Setup
+## Preview in Expo Go
+
+```bash
+npm install
+npx expo start
+```
+
+Scan the QR code with **Expo Go** on your Android phone (same Wi‑Fi as your PC).
+
+Expo Go preview includes the full UI and network type (4G/5G via NetInfo). These features require a **dev build** (`npx expo run:android` or EAS):
+
+- Persistent notification dot in the status bar
+- Live upload/download speeds
+- Background monitoring on battery saver
+
+## Full build (dev client)
 
 ```bash
 npm install
@@ -16,9 +31,9 @@ npx expo prebuild --platform android
 npx expo run:android
 ```
 
-This app uses native modules (`expo-stratum-core`, `react-native-notify-kit`) and **does not run in Expo Go**. Use a development build.
+Native modules (`expo-stratum-core`, `react-native-notify-kit`) are used automatically in dev builds.
 
-## EAS build (optional)
+### EAS build (optional)
 
 ```bash
 npx eas build --profile development --platform android

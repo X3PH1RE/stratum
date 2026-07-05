@@ -1,9 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getCellularInfo, getMobileTrafficStats } from 'expo-stratum-core';
 
 import { POLL_INTERVAL_MS, STORAGE_KEYS } from '../constants/config';
-import type { CellularInfo } from '../types';
-import { getCellularInfoWithFallback } from '../types';
+import { readCellularInfo, readMobileTrafficStats } from '../platform/nativeApi';
+import { isExpoGo } from '../platform/runtime';
+import type { CellularInfo } from '../types/cellular';
 import {
   dismissMonitorNotification,
   requestNotificationPermission,
@@ -18,6 +18,7 @@ export type MonitoringState = {
   cellular: CellularInfo;
   download: string;
   upload: string;
+  previewMode: boolean;
 };
 
 const defaultCellular: CellularInfo = {
@@ -35,6 +36,7 @@ class MonitoringController {
     cellular: defaultCellular,
     download: '—',
     upload: '—',
+    previewMode: isExpoGo,
   };
 
   subscribe(listener: MonitoringListener) {
@@ -81,7 +83,10 @@ class MonitoringController {
       return;
     }
 
-    await requestNotificationPermission();
+    if (!isExpoGo) {
+      await requestNotificationPermission();
+    }
+
     this.speedTracker.reset();
     this.setState({ running: true });
 
@@ -104,7 +109,7 @@ class MonitoringController {
 
     this.setState({
       running: false,
-      download: '—',
+      download: isExpoGo ? '—' : '—',
       upload: '—',
     });
 
@@ -113,22 +118,26 @@ class MonitoringController {
 
   private async tick() {
     try {
-      const nativeCellular = getCellularInfo();
-      const cellular = await getCellularInfoWithFallback(nativeCellular);
-      const traffic = getMobileTrafficStats();
+      const cellular = await readCellularInfo();
+      const traffic = await readMobileTrafficStats();
       const speeds = this.speedTracker.sample(
         traffic.rxBytes,
         traffic.txBytes,
         traffic.timestamp,
       );
 
+      const download = isExpoGo ? 'Preview' : speeds.download;
+      const upload = isExpoGo ? 'Preview' : speeds.upload;
+
       this.setState({
         cellular,
-        download: speeds.download,
-        upload: speeds.upload,
+        download,
+        upload,
       });
 
-      await updateMonitorNotification(cellular, speeds.download, speeds.upload);
+      if (!isExpoGo) {
+        await updateMonitorNotification(cellular, speeds.download, speeds.upload);
+      }
     } catch (error) {
       console.warn('Monitoring tick failed', error);
     }

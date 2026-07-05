@@ -2,6 +2,7 @@ import * as IntentLauncher from 'expo-intent-launcher';
 import { useEffect, useState } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 
+import { isExpoGo } from '../platform/runtime';
 import {
   monitoringController,
   type MonitoringState,
@@ -40,7 +41,7 @@ export function useMonitoring() {
   };
 }
 
-export type PermissionStatus = 'granted' | 'denied' | 'unknown';
+export type PermissionStatus = 'granted' | 'denied' | 'unknown' | 'unavailable';
 
 export type PermissionState = {
   phoneState: PermissionStatus;
@@ -86,13 +87,17 @@ export function usePermissions() {
     const notifications = await getNotificationStatus();
 
     let battery: PermissionStatus = 'unknown';
-    try {
-      const { isIgnoringBatteryOptimizations } = await import(
-        'expo-ignore-battery-optimizations'
-      );
-      battery = isIgnoringBatteryOptimizations() ? 'granted' : 'denied';
-    } catch {
-      battery = 'unknown';
+    if (isExpoGo) {
+      battery = 'unavailable';
+    } else {
+      try {
+        const { isIgnoringBatteryOptimizations } = await import(
+          'expo-ignore-battery-optimizations'
+        );
+        battery = isIgnoringBatteryOptimizations() ? 'granted' : 'denied';
+      } catch {
+        battery = 'unknown';
+      }
     }
 
     setPermissions({ phoneState, notifications, battery });
@@ -135,7 +140,7 @@ export function usePermissions() {
           buttonNegative: 'Deny',
         },
       );
-    } else {
+    } else if (!isExpoGo) {
       const notifee = (await import('react-native-notify-kit')).default;
       await notifee.requestPermission();
     }
@@ -144,6 +149,10 @@ export function usePermissions() {
   };
 
   const requestBattery = async () => {
+    if (isExpoGo) {
+      return;
+    }
+
     try {
       const { requestIgnoreBatteryOptimizations } = await import(
         'expo-ignore-battery-optimizations'
@@ -157,9 +166,10 @@ export function usePermissions() {
     await refresh();
   };
 
-  const requiredGranted =
-    permissions.phoneState === 'granted' &&
-    permissions.notifications === 'granted';
+  const requiredGranted = isExpoGo
+    ? true
+    : permissions.phoneState === 'granted' &&
+      permissions.notifications === 'granted';
 
   return {
     permissions,
@@ -168,5 +178,6 @@ export function usePermissions() {
     requestNotifications,
     requestBattery,
     requiredGranted,
+    isExpoGo,
   };
 }
