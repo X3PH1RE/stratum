@@ -4,9 +4,12 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start",
+    "start:dev": "expo start --dev-client",
     "android": "expo run:android",
     "prebuild": "expo prebuild --platform android",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "build:android": "eas build --profile preview --platform android",
+    "build:android:prod": "eas build --profile production --platform android"
   },
   "dependencies": {
     "@expo-google-fonts/dm-sans": "^0.4.2",

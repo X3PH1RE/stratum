@@ -2,11 +2,25 @@
 
 Android network monitor with a persistent notification dot (red for LTE/LTE+/4G, green for 5G/5G+), live upload/download speeds, and an AMOLED-black UI.
 
-## Requirements
+## Install on your phone (recommended)
 
-- Node.js 20+
-- Android device with cellular data (emulator is not sufficient for 4G/5G testing)
-- [Android SDK](https://docs.expo.dev/workflow/android-studio-emulator/) for local builds
+Build a standalone APK in the cloud with EAS, then install it on your Android device:
+
+```bash
+npm install
+npx eas login
+npm run build:android
+```
+
+When the build finishes, open the link in the terminal (or [expo.dev](https://expo.dev) → your project → Builds), download the **APK**, and install it on your phone. You may need to allow **Install from unknown sources** for your browser or file manager.
+
+This **preview** build includes all native features (notification dot, live speeds, background monitoring). It does not require Expo Go or a dev server.
+
+For a production-labelled build:
+
+```bash
+npm run build:android:prod
+```
 
 ## Preview in Expo Go
 
@@ -17,28 +31,16 @@ npx expo start
 
 Scan the QR code with **Expo Go** on your Android phone (same Wi‑Fi as your PC). Do not press **w** (web) — this app is Android-only.
 
-This project uses **Expo SDK 54**, which is compatible with the **Play Store** version of Expo Go.
+Expo Go preview includes the UI and network type (4G/5G via NetInfo). Notification dot, live speeds, and background monitoring require the installable build above.
 
-Expo Go preview includes the full UI and network type (4G/5G via NetInfo). These features require a **dev build** (`npx expo run:android` or EAS):
+## Local dev build (optional)
 
-- Persistent notification dot in the status bar
-- Live upload/download speeds
-- Background monitoring on battery saver
-
-## Full build (dev client)
+Requires Android SDK, JDK 17+, and a connected device or emulator:
 
 ```bash
 npm install
 npx expo prebuild --platform android
 npx expo run:android
-```
-
-Native modules (`expo-stratum-core`, `react-native-notify-kit`) are used automatically in dev builds.
-
-### EAS build (optional)
-
-```bash
-npx eas build --profile development --platform android
 ```
 
 ## Usage

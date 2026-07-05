@@ -16,6 +16,7 @@ const config: ExpoConfig = {
   },
   android: {
     package: 'com.stratum.monitor',
+    versionCode: 1,
     adaptiveIcon: {
       backgroundColor: '#000000',
       foregroundImage: './assets/android-icon-foreground.png',
@@ -51,6 +52,12 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
   },
+  extra: {
+    eas: {
+      projectId: '256d1310-c46d-48f0-9918-b95c0e721c32',
+    },
+  },
+  owner: 'ashwinmenon',
 } as ExpoConfig;
 
 export default config;
