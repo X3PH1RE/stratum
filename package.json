@@ -31,7 +31,7 @@
     "react-native-screens": "~4.16.0"
   },
   "devDependencies": {
-    "@expo/config-plugins": "^57.0.2",
+    "@expo/config-plugins": "~54.0.4",
     "@types/react": "~19.1.10",
     "typescript": "~5.9.2"
   },
