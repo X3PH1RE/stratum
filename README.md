@@ -15,7 +15,7 @@ npm install
 npx expo start
 ```
 
-Scan the QR code with **Expo Go** on your Android phone (same Wi‑Fi as your PC).
+Scan the QR code with **Expo Go** on your Android phone (same Wi‑Fi as your PC). Do not press **w** (web) — this app is Android-only.
 
 Expo Go preview includes the full UI and network type (4G/5G via NetInfo). These features require a **dev build** (`npx expo run:android` or EAS):
 

@@ -4,6 +4,7 @@ const config: ExpoConfig = {
   name: 'Stratum',
   slug: 'stratum',
   version: '1.0.0',
+  platforms: ['android'],
   orientation: 'portrait',
   scheme: 'stratum',
   userInterfaceStyle: 'dark',
