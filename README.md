@@ -17,6 +17,8 @@ npx expo start
 
 Scan the QR code with **Expo Go** on your Android phone (same Wi‑Fi as your PC). Do not press **w** (web) — this app is Android-only.
 
+This project uses **Expo SDK 54**, which is compatible with the **Play Store** version of Expo Go.
+
 Expo Go preview includes the full UI and network type (4G/5G via NetInfo). These features require a **dev build** (`npx expo run:android` or EAS):
 
 - Persistent notification dot in the status bar
@@ -49,7 +51,7 @@ npx eas build --profile development --platform android
 
 ## Stack
 
-- Expo SDK 57 + TypeScript
+- Expo SDK 54 + TypeScript
 - `expo-stratum-core` — cellular labels (LTE/LTE+/5G/5G+) + mobile traffic stats
 - `react-native-notify-kit` — Android foreground service notification
 - `@react-native-community/netinfo` — fallback generation detection
