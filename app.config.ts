@@ -48,6 +48,7 @@ const config: ExpoConfig = {
       },
     ],
     './plugins/withNotificationDot.js',
+    './plugins/withFixHermesBuildGradle.js',
   ],
   experiments: {
     typedRoutes: true,
