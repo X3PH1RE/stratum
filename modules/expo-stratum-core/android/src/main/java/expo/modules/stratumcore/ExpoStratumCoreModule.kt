@@ -3,6 +3,7 @@ package expo.modules.stratumcore
 import android.content.Context
 import android.net.TrafficStats
 import android.os.Build
+import android.telephony.TelephonyCallback
 import android.telephony.TelephonyDisplayInfo
 import android.telephony.TelephonyManager
 import expo.modules.kotlin.modules.Module
@@ -11,6 +12,14 @@ import expo.modules.kotlin.modules.ModuleDefinition
 class ExpoStratumCoreModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("ExpoStratumCore")
+
+    OnCreate {
+      registerDisplayInfoListener()
+    }
+
+    OnDestroy {
+      unregisterDisplayInfoListener()
+    }
 
     Function("getMobileTrafficStats") {
       getMobileTrafficStatsMap()
@@ -51,25 +60,9 @@ class ExpoStratumCoreModule : Module() {
       telephonyManager.networkOperatorName?.takeIf { it.isNotBlank() }
         ?: telephonyManager.simOperatorName?.takeIf { it.isNotBlank() }
 
-    var label = mapNetworkTypeToLabel(networkType)
+    val overrideType = cachedOverrideNetworkType
+    var label = mapNetworkTypeToLabel(networkType, overrideType)
     var family = mapLabelToFamily(label)
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && networkType == TelephonyManager.NETWORK_TYPE_NR) {
-      try {
-        @Suppress("DEPRECATION")
-        val displayInfo = telephonyManager.displayInfo
-        val override = displayInfo?.overrideNetworkType ?: TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NONE
-        if (
-          override == TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED ||
-          override == TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA_MMWAVE
-        ) {
-          label = "5G+"
-          family = "fiveG"
-        }
-      } catch (_: Exception) {
-        // Telephony display info unavailable on some devices.
-      }
-    }
 
     return mapOf(
       "label" to label,
@@ -78,10 +71,21 @@ class ExpoStratumCoreModule : Module() {
     )
   }
 
-  private fun mapNetworkTypeToLabel(networkType: Int): String {
+  private fun mapNetworkTypeToLabel(networkType: Int, overrideType: Int): String {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      when (overrideType) {
+        TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_CA,
+        TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_ADVANCED_PRO,
+        -> return "LTE+"
+        TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED,
+        TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA_MMWAVE,
+        -> return "5G+"
+        TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA -> return "5G"
+      }
+    }
+
     return when (networkType) {
       TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
-      TelephonyManager.NETWORK_TYPE_LTE_CA -> "LTE+"
       TelephonyManager.NETWORK_TYPE_NR -> "5G"
       TelephonyManager.NETWORK_TYPE_HSPAP,
       TelephonyManager.NETWORK_TYPE_HSPA,
@@ -118,5 +122,51 @@ class ExpoStratumCoreModule : Module() {
       "family" to "other",
       "carrier" to null,
     )
+  }
+
+  private fun registerDisplayInfoListener() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+      return
+    }
+
+    val context = appContext.reactContext ?: return
+    val telephonyManager =
+      context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager ?: return
+
+    if (displayCallback != null) {
+      return
+    }
+
+    val callback =
+      object : TelephonyCallback(), TelephonyCallback.DisplayInfoListener {
+        override fun onDisplayInfoChanged(displayInfo: TelephonyDisplayInfo) {
+          cachedOverrideNetworkType = displayInfo.overrideNetworkType
+        }
+      }
+
+    displayCallback = callback
+    telephonyManager.registerTelephonyCallback(context.mainExecutor, callback)
+  }
+
+  private fun unregisterDisplayInfoListener() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+      return
+    }
+
+    val context = appContext.reactContext ?: return
+    val telephonyManager =
+      context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager ?: return
+    val callback = displayCallback ?: return
+
+    telephonyManager.unregisterTelephonyCallback(callback)
+    displayCallback = null
+  }
+
+  companion object {
+    @Volatile
+    private var cachedOverrideNetworkType: Int = TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NONE
+
+    @Volatile
+    private var displayCallback: TelephonyCallback? = null
   }
 }
